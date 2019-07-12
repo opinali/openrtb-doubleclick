@@ -41,7 +41,7 @@ class BidExtReader extends OpenRtbJsonExtComplexReader<Bid.Builder, BidExt.Build
     super(AdxExt.bid, false,
         "impression_tracking_url", "ad_choices_destination_url", "bidder_name",
         "exchange_deal_type", "event_notification_token", "attribute", "amp_ad_url",
-        "sdk_rendered_ad", "restricted_category", "billing_id",
+        "sdk_rendered_ad", "restricted_category", "billing_id", "payment_bid",
         "use_bid_translation_service");
   }
 
@@ -90,6 +90,10 @@ class BidExtReader extends OpenRtbJsonExtComplexReader<Bid.Builder, BidExt.Build
       case "use_bid_translation_service":
         par.nextToken();
         ext.setUseBidTranslationService(par.getValueAsBoolean());
+        break;
+      case "payment_bid":
+        par.nextToken();
+        ext.setPaymentBid(par.getDoubleValue());
         break;
     }
   }

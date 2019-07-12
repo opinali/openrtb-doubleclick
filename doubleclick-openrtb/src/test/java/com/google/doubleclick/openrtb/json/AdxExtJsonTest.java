@@ -136,6 +136,7 @@ public class AdxExtJsonTest {
                     .addAllRestrictedCategory(asList(44, 55, 66))
                     .setBillingId(77)
                     .setUseBidTranslationService(true)
+                    .setPaymentBid(8.8)
                     .build())))
         .setExtension(AdxExt.bidResponse,
             BidResponseExt.newBuilder().setProcessingTimeMs(99).build())
