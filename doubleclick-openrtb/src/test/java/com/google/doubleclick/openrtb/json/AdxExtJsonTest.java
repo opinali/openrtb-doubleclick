@@ -22,6 +22,9 @@ import com.google.doubleclick.AdxExt.ImpExt.BuyerGeneratedRequestData;
 import com.google.doubleclick.AdxExt.ImpExt.BuyerGeneratedRequestData.SourceApp;
 import com.google.doubleclick.AdxExt.ImpExt.ExcludedCreative;
 import com.google.doubleclick.AdxExt.ImpExt.OpenBidding;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping.FormatType;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping.Keyval;
 import com.google.doubleclick.AdxExt.NativeRequestExt;
 import com.google.doubleclick.AdxExt.NativeRequestExt.LayoutType;
 import com.google.doubleclick.AdxExt.RegsExt;
@@ -90,7 +93,12 @@ public class AdxExtJsonTest {
                 .addAllExcludedCreatives(asList(
                     ExcludedCreative.newBuilder().setBuyerCreativeId("cr1").build(),
                     ExcludedCreative.newBuilder().setBuyerCreativeId("cr2").build()))
-                .setOpenBidding(OpenBidding.newBuilder().setIsOpenBidding(true))
+                .setOpenBidding(OpenBidding.newBuilder()
+                    .setIsOpenBidding(true)
+                    .addAdunitMappings(AdUnitMapping.newBuilder()
+                        .setFormat(FormatType.FORMAT_BANNER)
+                        .addKeyvals(Keyval.newBuilder().setKey("k1").setValue("v1"))
+                        .addKeyvals(Keyval.newBuilder().setKey("k2").setValue("v2"))))
                 .addAllAllowedRestrictedCategory(asList(401, 402, 403))
                 .build()))
         .setSite(Site.newBuilder()
@@ -154,6 +162,7 @@ public class AdxExtJsonTest {
                     .setBillingId(77)
                     .setDEPRECATEDUseBidTranslationService(true)
                     .setThirdPartyBuyerToken("tpbt")
+                    .setPaymentBid(8.8)
                     .setBuyerReportingId("bri1")
                     .build())))
         .setExtension(AdxExt.bidResponse,

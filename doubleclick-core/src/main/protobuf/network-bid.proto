@@ -961,6 +961,7 @@ message BidRequest {
         optional CreativeSourceType creative_source = 16
             [default = CREATIVE_SOURCE_ADVERTISER];
 
+
         // This field is deprecated in favor of the boolean must_bid field
         // below as of December 2019. It will be removed from the protocol in
         // August 2020.

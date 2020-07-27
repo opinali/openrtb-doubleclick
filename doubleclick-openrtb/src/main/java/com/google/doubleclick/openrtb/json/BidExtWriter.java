@@ -70,6 +70,9 @@ class BidExtWriter extends OpenRtbJsonExtWriter<BidExt> {
     if (ext.hasBuyerReportingId()) {
       gen.writeStringField("buyer_reporting_id", ext.getBuyerReportingId());
     }
+    if (ext.hasPaymentBid()) {
+      gen.writeNumberField("payment_bid", ext.getPaymentBid());
+    }
   }
 
   public final void writeEventNotificationToken(EventNotificationToken req, JsonGenerator gen)

@@ -30,6 +30,9 @@ import com.google.doubleclick.AdxExt.ImpExt.AmpAdRequirementType;
 import com.google.doubleclick.AdxExt.ImpExt.BuyerGeneratedRequestData;
 import com.google.doubleclick.AdxExt.ImpExt.BuyerGeneratedRequestData.SourceApp;
 import com.google.doubleclick.AdxExt.ImpExt.OpenBidding;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping.FormatType;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping.Keyval;
 import com.google.openrtb.OpenRtb.BidRequest.Imp;
 import com.google.openrtb.json.OpenRtbJsonExtComplexReader;
 import java.io.IOException;
@@ -121,6 +124,61 @@ class ImpExtReader extends OpenRtbJsonExtComplexReader<Imp.Builder, ImpExt.Build
       case "is_open_bidding":
         obid.setIsOpenBidding(par.getValueAsBoolean());
         break;
+      case "adunit_mappings":
+        for (startArray(par); endArray(par); par.nextToken()) {
+          obid.addAdunitMappings(readAdUnitMapping(par));
+        }
+        break;
+    }
+  }
+
+  public final AdUnitMapping.Builder readAdUnitMapping(JsonParser par) throws IOException {
+    AdUnitMapping.Builder aum = AdUnitMapping.newBuilder();
+    for (startObject(par); endObject(par); par.nextToken()) {
+      String fieldName = getCurrentName(par);
+      if (par.nextToken() != JsonToken.VALUE_NULL) {
+        readAdUnitMappingField(par, aum, fieldName);
+      }
+    }
+    return aum;
+  }
+
+  protected void readAdUnitMappingField(JsonParser par, AdUnitMapping.Builder aum, String fieldName)
+      throws IOException {
+    switch (fieldName) {
+      case "format": {
+          FormatType value = FormatType.forNumber(par.getIntValue());
+          if (checkEnum(value)) {
+            aum.setFormat(value);
+          }
+        }
+        break;
+      case "keyvals":
+        for (startArray(par); endArray(par); par.nextToken()) {
+          aum.addKeyvals(readKeyval(par));
+        }
+    }
+  }
+
+  public final Keyval.Builder readKeyval(JsonParser par) throws IOException {
+    Keyval.Builder kv = Keyval.newBuilder();
+    for (startObject(par); endObject(par); par.nextToken()) {
+      String fieldName = getCurrentName(par);
+      if (par.nextToken() != JsonToken.VALUE_NULL) {
+        readKeyvalField(par, kv, fieldName);
+      }
+    }
+    return kv;
+  }
+
+  protected void readKeyvalField(JsonParser par, Keyval.Builder kv, String fieldName)
+      throws IOException {
+    switch (fieldName) {
+      case "key":
+        kv.setKey(par.getText());
+        break;
+      case "value":
+        kv.setValue(par.getText());
     }
   }
 
