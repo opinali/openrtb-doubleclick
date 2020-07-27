@@ -28,6 +28,8 @@ import com.google.doubleclick.AdxExt.ImpExt.BuyerGeneratedRequestData;
 import com.google.doubleclick.AdxExt.ImpExt.BuyerGeneratedRequestData.SourceApp;
 import com.google.doubleclick.AdxExt.ImpExt.ExcludedCreative;
 import com.google.doubleclick.AdxExt.ImpExt.OpenBidding;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping;
+import com.google.doubleclick.AdxExt.ImpExt.OpenBidding.AdUnitMapping.Keyval;
 import com.google.openrtb.json.OpenRtbJsonExtWriter;
 import java.io.IOException;
 
@@ -80,6 +82,49 @@ class ImpExtWriter extends OpenRtbJsonExtWriter<ImpExt> {
   protected void writeOpenBiddingFields(OpenBidding obid, JsonGenerator gen) throws IOException {
     if (obid.hasIsOpenBidding()) {
       writeIntBoolField("is_open_bidding", obid.getIsOpenBidding(), gen);
+    }
+    if (obid.getAdunitMappingsCount() != 0) {
+      gen.writeArrayFieldStart("adunit_mappings");
+      for (AdUnitMapping aum : obid.getAdunitMappingsList()) {
+        writeAdUnitMapping(aum, gen);
+      }
+      gen.writeEndArray();
+    }
+  }
+
+  public final void writeAdUnitMapping(AdUnitMapping aum, JsonGenerator gen) throws IOException {
+    gen.writeStartObject();
+    writeAdUnitMappingFields(aum, gen);
+    gen.writeEndObject();
+    gen.flush();
+  }
+
+  protected void writeAdUnitMappingFields(AdUnitMapping aum, JsonGenerator gen) throws IOException {
+    if (aum.hasFormat()) {
+      writeEnumField("format", aum.getFormat(), gen);
+    }
+    if (aum.getKeyvalsCount() != 0) {
+      gen.writeArrayFieldStart("keyvals");
+      for (Keyval kv : aum.getKeyvalsList()) {
+        writeKeyVal(kv, gen);
+      }
+      gen.writeEndArray();
+    }
+  }
+
+  public final void writeKeyVal(Keyval kv, JsonGenerator gen) throws IOException {
+    gen.writeStartObject();
+    writeKeyvalFields(kv, gen);
+    gen.writeEndObject();
+    gen.flush();
+  }
+
+  protected void writeKeyvalFields(Keyval kv, JsonGenerator gen) throws IOException {
+    if (kv.hasKey()) {
+      gen.writeStringField("key", kv.getKey());
+    }
+    if (kv.hasValue()) {
+      gen.writeStringField("value", kv.getValue());
     }
   }
 
