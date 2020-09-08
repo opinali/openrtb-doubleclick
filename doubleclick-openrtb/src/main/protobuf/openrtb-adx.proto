@@ -94,6 +94,25 @@ message ImpExt {
     // https://support.google.com/admanager/answer/7128453 for information on
     // Open Bidding and its effects on the bidding process.
     optional bool is_open_bidding = 2;
+
+    // AdunitMapping is used in network bidding to identify inventory.
+    message AdUnitMapping {
+      message Keyval {
+        optional string key = 1;
+        optional string value = 2;
+      }
+      repeated Keyval keyvals = 1;
+      enum FormatType {
+        FORMAT_UNKNOWN = 0;
+        FORMAT_BANNER = 1;
+        FORMAT_INTERSTITIAL = 2;
+        FORMAT_NATIVE = 3;
+        FORMAT_VIDEO_VAST = 4;
+        FORMAT_REWARDED = 5;
+      }
+      optional FormatType format = 2;
+    }
+    repeated AdUnitMapping adunit_mappings = 1;
   }
   optional OpenBidding open_bidding = 12;
 
@@ -251,6 +270,26 @@ message BidExt {
   // is not required and its contents will be ignored.
   optional int64 billing_id = 10;
 
+<<<<<<< HEAD
+=======
+  optional double payment_bid = 11;
+
+  // This field is deprecated as of July 8, 2020 and will be removed July 31,
+  // 2020.
+  //
+  // [AdX: BidResponse.Ad.AdSlot.use_bid_translation_service]
+  // This field is applicable only for bid requests that are marked as first
+  // price, and will otherwise be ignored. If the field is set to true on a
+  // first price request, then the bid will go through a bid translation service
+  // that converts the second price bid into a first price bid for
+  // participation in the first price auction (i.e. may reduce but will
+  // never increase the bid). If the field is not set, then for first price
+  // eligible queries the bid will be treated as a first price bid. This
+  // field is a temporary product for bidders that require assistance
+  // migrating to 1st price bidding, and will eventually be deprecated.
+  optional bool use_bid_translation_service = 12;
+
+>>>>>>> 8c27ad9 (Restore/update next-ext extensions)
   // Token used to identify end third party buyer information if an
   // exchange as an open bidder is an intermediary. This is obtained from the
   // third party buyer and must be passed to Google unaltered in the bid
@@ -521,8 +560,8 @@ message BidRequestExt {
     // is the CPM that should have been exceeded in order to win.  This is not
     // set if the bid was filtered prior to the auction, if the publisher or
     // winning bidder has opted out of price feedback or if your account has
-    // opted out of sharing winning prices with other bidders. For first-price
-    // auctions, minimum_bid_to_win is populated instead of this field.
+    // opted out of sharing winning prices with other bidders. For first price
+    // auctions, minimum_bid_to_win is also populated.
     optional double price = 3;
 
     // The minimum bid value necessary to have the auction, in your account
