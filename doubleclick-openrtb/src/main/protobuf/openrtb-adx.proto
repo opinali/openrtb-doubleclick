@@ -1,9 +1,11 @@
-// Protocol version: #113
+// Protocol version: v.67
 import "openrtb.proto";
 option java_outer_classname = "AdxExt";
 package com.google.doubleclick;
 
-// Copyright 2020 Google Inc. All Rights Reserved.
+// Copyright 2021 Google Inc. All Rights Reserved.
+
+import "google/protobuf/struct.proto";
 
 // Protocol buffer for Ad Exchange OpenRTB specification.
 
@@ -92,25 +94,6 @@ message ImpExt {
     // https://support.google.com/admanager/answer/7128453 for information on
     // Open Bidding and its effects on the bidding process.
     optional bool is_open_bidding = 2;
-
-    // AdunitMapping is used in network bidding to identify inventory.
-    message AdUnitMapping {
-      message Keyval {
-        optional string key = 1;
-        optional string value = 2;
-      }
-      repeated Keyval keyvals = 1;
-      enum FormatType {
-        FORMAT_UNKNOWN = 0;
-        FORMAT_BANNER = 1;
-        FORMAT_INTERSTITIAL = 2;
-        FORMAT_NATIVE = 3;
-        FORMAT_VIDEO_VAST = 4;
-        FORMAT_REWARDED = 5;
-      }
-      optional FormatType format = 2;
-    }
-    repeated AdUnitMapping adunit_mappings = 1;
   }
   optional OpenBidding open_bidding = 12;
 
@@ -129,13 +112,12 @@ message ImpExt {
   // (Info.plist) to allow an install to be attributed to the ad impression.
   // For more info visit:
   // https://developer.apple.com/documentation/storekit/skadnetwork
-  // Next tag to use: 4
   message SKAdNetworkRequest {
     // Version of SKAdNetwork supported. Dependent on both the OS version
     // and the SDK version.
     optional string version = 1;
 
-    // ID of publisher app in Apple’s App Store.
+    // ID of publisher app in Appleâ€™s App Store.
     optional string sourceapp = 2;
 
     // SKAdNetworkIdentifier entries in the publisher app's Info.plist.
@@ -144,6 +126,7 @@ message ImpExt {
 
   // [AdX: BidRequest.Mobile.skadn]
   optional SKAdNetworkRequest skadn = 14;
+
 }
 
 extend com.google.openrtb.BidRequest.Imp {
@@ -185,6 +168,15 @@ extend com.google.openrtb.BidRequest.App {
 message BidResponseExt {
   // [AdX: BidResponse.processing_time_ms]
   optional int32 processing_time_ms = 1;
+
+  // Experimental feature; may be subject to change. See
+  // https://github.com/google/ads-privacy/tree/master/experiments/turtledove-simulation
+  // and https://developers.google.com/authorized-buyers/rtb/turtledove
+  // for more information about the TURTLEDOVE simulation for RTB.
+  //
+  // Contains contextual signals that will be passed to the bidding function
+  // for the TURTLEDOVE simulation.
+  optional .google.protobuf.Value contextual_signal = 2;
 }
 
 extend com.google.openrtb.BidResponse {
@@ -200,8 +192,9 @@ message BidExt {
   // [AdX: BidResponse.Ad.ad_choices_destination_url]
   optional string ad_choices_destination_url = 2;
 
+  // This field is deprecated due to being unused.
   // [AdX: BidResponse.Ad.bidder_name]
-  optional string bidder_name = 3;
+  optional string DEPRECATED_bidder_name = 3 [deprecated = true];
 
   // [AdX: BidResponse.Ad.AdSlot.exchange_deal_type]
   enum ExchangeDealType {
@@ -258,23 +251,6 @@ message BidExt {
   // is not required and its contents will be ignored.
   optional int64 billing_id = 10;
 
-  optional double payment_bid = 11;
-
-  // This field is deprecated as of July 8, 2020 and will be removed July 31,
-  // 2020.
-  //
-  // [AdX: BidResponse.Ad.AdSlot.use_bid_translation_service]
-  // This field is applicable only for bid requests that are marked as first
-  // price, and will otherwise be ignored. If the field is set to true on a
-  // first price request, then the bid will go through a bid translation service
-  // that converts the second price bid into a first price bid for
-  // participation in the first price auction (i.e. may reduce but will
-  // never increase the bid). If the field is not set, then for first price
-  // eligible queries the bid will be treated as a first price bid. This
-  // field is a temporary product for bidders that require assistance
-  // migrating to 1st price bidding, and will eventually be deprecated.
-  optional bool use_bid_translation_service = 12;
-
   // Token used to identify end third party buyer information if an
   // exchange as an open bidder is an intermediary. This is obtained from the
   // third party buyer and must be passed to Google unaltered in the bid
@@ -287,6 +263,64 @@ message BidExt {
   // IDs longer than 64 bytes will be ignored.
   optional string buyer_reporting_id = 17;
 
+  // Experimental feature; may be subject to change. See
+  // https://github.com/google/ads-privacy/tree/master/experiments/frequency-capping
+  // for more information about the experiment on exchange-enforced
+  // frequency capping.
+  //
+  // Specifies frequency capping to be applied to the bid. Impressions for each
+  // user are capped at the level specified by fcap_id. A bid will not
+  // participate in the auction if an additional impression for the user would
+  // violate any of the specified caps. Multiple frequency caps can be specified
+  // for the same fcap_id.
+  //
+  // A bid is filtered before the auction if the frequency cap is malformed.
+  // Instances where the cap is malformed include:
+  //  - fcap_id is empty or is very long
+  //  - max_mpressions or time_range are non-positive
+  //  - there are a large number of frequency caps for a single bid
+  //  - time_unit is not specified
+  //
+  // Note that if a subsequent bid with the same fcap_id uses a different
+  // duration (represented by time_unit and time_range) then impressions counted
+  // against the old frequency cap will not count against the new one and vice
+  // versa.
+  message FrequencyCap {
+    // An ID that can represent a bidder's use-case for frequency capping; for
+    // example, it could represent their campaign, ad, line item, etc. It should
+    // not contain any user-specific information or identifiers.
+    optional string fcap_id = 1;
+
+    // The time units for which frequency caps can be enforced.
+    enum TimeUnit {
+      UNKNOWN_TIME_UNIT = 0;
+      MINUTE = 1;
+      DAY = 2;
+      WEEK = 3;
+      MONTH = 4;
+      // When INDEFINITE is used, time_range will be ignored. INDEFINITE means
+      // the frequency cap will be applied for a long period of time, (longer
+      // than a month) but not necessarily forever.
+      INDEFINITE = 5;
+    }
+
+    // The unit of time used to specify the time window for which a frequency
+    // cap applies.
+    optional TimeUnit time_unit = 2;
+
+    // The length of the time window, in units specified by time_unit, for which
+    // the frequency cap applies. For instance, if time_unit=WEEK and
+    // time_range=3, then capping is applied for a three week period. If the
+    // time_unit=INDEFINITE, this will be ignored.
+    optional int32 time_range = 3 [default = 1];
+
+    // The maximum number of impressions allowed to be shown to a user for
+    // the provided frequency_cap_id within the time window described by
+    // time_unit and time_range.
+    optional int32 max_imp = 4;
+  }
+  repeated FrequencyCap fcap = 18;
+
   // Advertiser's SKAdNetwork information to support app installation
   // attribution for iOS 14 and later.  Apple's SKAdNetwork API helps
   // advertisers measure ad-driven app installation by sending a postback
@@ -295,7 +329,6 @@ message BidExt {
   // an install to be attributed to the ad impression.
   // For more info visit:
   // https://developer.apple.com/documentation/storekit/skadnetwork
-  // Next tag to use: 9
   message SKAdNetworkResponse {
     // Version of SKAdNetwork supported by the advertiser. Also used to
     // specify how the signature was generated by the advertiser. This
@@ -329,6 +362,27 @@ message BidExt {
 
   // [AdX: BidResponse.Ad.skadn]
   optional SKAdNetworkResponse skadn = 19;
+
+  // Experimental feature; may be subject to change. See
+  // https://github.com/google/ads-privacy/tree/master/experiments/turtledove-simulation
+  // and https://developers.google.com/authorized-buyers/rtb/turtledove
+  // for more information about the TURTLEDOVE simulation for RTB.
+  //
+  // Bidding function name that the bidder selected for the TURTLEDOVE
+  // simulation. The name refers to the bidding function
+  // that is provided ahead of time via Bidding functions API resource.
+  // Bid value will be computed by the bidding function; value provided via
+  // max_cpm_micros will be ignored.
+  optional string bidding_function_name = 20;
+
+  // Experimental feature; may be subject to change. See
+  // https://github.com/google/ads-privacy/tree/master/experiments/turtledove-simulation
+  // and https://developers.google.com/authorized-buyers/rtb/turtledove
+  // for more information about the TURTLEDOVE simulation for RTB.
+  //
+  // Contains TURTLEDOVE interest group-related data that will be passed
+  // to the bidding function.
+  optional .google.protobuf.Value interest_group_data = 21;
 }
 
 extend com.google.openrtb.BidResponse.SeatBid.Bid {
@@ -405,6 +459,27 @@ message SiteExt {
   }
   // Whether this is an AMP page or not. Omitted if unknown.
   optional AmpPage amp = 1;
+
+  enum VisibilityState {
+    VISIBILITY_STATE_UNKNOWN = 0;
+    // The page is at least partially visible. For example, in the foreground
+    // tab of a non-minimized window.
+    VISIBILITY_STATE_VISIBLE = 1;
+    // The page is not visible to users. For example, when the page is in a
+    // background browser tab, or in a minimized window.
+    VISIBILITY_STATE_HIDDEN = 2;
+  }
+  // The visibility state of the web page containing the ad slot.
+  // See https://www.w3.org/TR/page-visibility/.
+  // [AdX: BidRequest.page_visibility]
+  optional VisibilityState page_visibility = 2
+      [default = VISIBILITY_STATE_UNKNOWN];
+
+  // Indicates that the request is using semi-transparent branding,
+  // which means only a truncated version of the request URL will
+  // be provided.  This decision is made by the publisher, see
+  // https://support.google.com/admanager/answer/4584891#urls for context.
+  optional bool is_semi_transparent_request = 3;
 }
 
 extend com.google.openrtb.BidRequest.Site {
@@ -424,13 +499,30 @@ message BidRequestExt {
     // technical documentation for a list of ids.
     optional int32 creative_status_code = 2;
 
+    // Experimental feature; may be subject to change. See
+    // https://github.com/google/ads-privacy/tree/master/experiments/turtledove-simulation
+    // and https://developers.google.com/authorized-buyers/rtb/turtledove
+    // for more information about the TURTLEDOVE simulation for RTB.
+    //
+    // This is the bid price CPM specified by the bidder in the bid response
+    // or computed by a bidding function in the TURTLEDOVE simulation
+    // (https://developers.google.com/authorized-buyers/rtb/turtledove)
+    // expressed in the bidding currency. The bidding currency is determined
+    // by:
+    // 1. The bidder-level currency, if configured.
+    // 2. Otherwise, the currency of the buyer account indicated by the
+    // billing ID in the billing_id field.
+    // 3. If billing_id is empty, the currency of the buyer account indicated
+    // by the sole billing ID in the bid request.
+    optional double bid_price = 9;
+
     // If the bid won the auction, this is the price paid in your account
     // currency.  If the bid participated in the auction but was out-bid, this
     // is the CPM that should have been exceeded in order to win.  This is not
     // set if the bid was filtered prior to the auction, if the publisher or
     // winning bidder has opted out of price feedback or if your account has
-    // opted out of sharing winning prices with other bidders. For first price
-    // auctions, minimum_bid_to_win is also populated.
+    // opted out of sharing winning prices with other bidders. For first-price
+    // auctions, minimum_bid_to_win is populated instead of this field.
     optional double price = 3;
 
     // The minimum bid value necessary to have the auction, in your account
@@ -482,7 +574,7 @@ message UserExt {
     // publisher has specified to Google that its EEA users have given legally
     // valid consent to: 1) the use of cookies or other local storage where
     // legally required; and 2) the collection, sharing, and use of personal
-    // data for personalization of ads by an ATP in accordance with Google’s EU
+    // data for personalization of ads by an ATP in accordance with Googleâ€™s EU
     // User Consent Policy.
     //
     // If a publisher is using the IAB Transparency and Consent Framework (TCF)
@@ -515,6 +607,40 @@ message UserExt {
   // https://vendorlist.consensu.org/v2/vendor-list.json for details about the
   // vendors listed in the consent string.
   optional string consent = 2;
+
+  message Floc {
+    // The value of a cohort ID â€“ a string identifier that is common to a large
+    // cohort of users with similar browsing habits.
+    optional string id = 1;
+
+    // The type of the FLoC. See
+    // https://github.com/google/ads-privacy/blob/master/proposals/FLoC/FLOC-Whitepaper-Google.pdf.
+    enum FlocType {
+      // Default value that should not be used.
+      FLOC_TYPE_UNKNOWN = 0;
+      // FLoC simulated using affinity hierarchical clustering with centroids
+      // and feature extraction based on Topic categories as described in the
+      // whitepaper.
+      SIMULATED_AFFINITY_CLUSTERING_CENTROID_VERTICAL = 2;
+      // FLoC simulated using SortingLSH clustering algorithm and Domain One-hot
+      // encoding feature extraction as described in the whitepaper.
+      SIMULATED_SIMHASH_SORTING_LSH_DOMAIN_ONE_HOT = 3;
+      // FLoC simulated using a k Random Centers locality-sensitive hash
+      // function as described in
+      // https://github.com/google/ads-privacy/blob/master/proposals/FLoC/k-random-centers.md
+      // with Domain TF-IDF feature extraction as described in the whitepaper.
+      KCENTER_DOM_FILTERED_TFDIF = 4;
+    }
+    optional FlocType type = 2;
+  }
+  // Cohort ID that is common to a large cohort of users with similar
+  // browsing habits. Currently the cohort ID is simulated by the exchange
+  // (as opposed to by the browser). When simulated
+  // cohort ID is provided, traditional pseudonymous cookie-based user
+  // identifiers or device advertising identifiers would not be populated.
+  // Experimental feature; may be subject to change. See
+  // https://github.com/WICG/floc for more background on FLoC.
+  optional Floc floc = 3;
 }
 
 extend com.google.openrtb.BidRequest.User {
@@ -635,4 +761,22 @@ message DealExt {
 extend com.google.openrtb.BidRequest.Imp.Pmp.Deal {
   // Extension key for AdX Deal.ext.
   optional DealExt deal = 1010;
+}
+
+message SourceExt {
+  // Identifier of the OM SDK integration. Equivalent to
+  // BidRequest.AdSlot.omidpn in the Google protocol. For more info,
+  // see the OpenRTB Advisory for Open Measurement SDK:
+  // https://github.com/InteractiveAdvertisingBureau/AdCOM/blob/master/OpenRTB%20support%20for%20OMSDK.md#openrtb-and-adcom.
+  optional string omidpn = 1;
+  // Version of the OM SDK integration. Equivalent to BidRequest.AdSlot.omidpv
+  // in the Google protocol. For more info, see the OpenRTB Advisory for
+  // Open Measurement SDK:
+  // https://github.com/InteractiveAdvertisingBureau/AdCOM/blob/master/OpenRTB%20support%20for%20OMSDK.md#openrtb-and-adcom.
+  optional string omidpv = 2;
+}
+
+extend com.google.openrtb.BidRequest.Source {
+  // Extension key for Source.ext
+  optional SourceExt source = 1059;
 }
